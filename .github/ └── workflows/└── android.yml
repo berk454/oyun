@@ -1,1 +1,106 @@
 
+name: Godot Android Export
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  export:
+    name: Android Export
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract Zip File & Move All Files
+        shell: bash
+        run: |
+          if [ -f "Roblox2_Online_v1_2.zip" ]; then
+            unzip -o Roblox2_Online_v1_2.zip
+          fi
+
+          PROJ_DIR=$(find . -mindepth 2 -name "project.godot" -exec dirname {} \; | head -n 1)
+
+          if [ -n "$PROJ_DIR" ]; then
+            echo "Proje klasoru bulundu: $PROJ_DIR"
+            shopt -s dotglob
+            cp -r "$PROJ_DIR"/* .
+          fi
+
+      - name: Set up Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Keystore
+        shell: bash
+        run: |
+          mkdir -p ~/.android
+
+          keytool -keyalg RSA \
+            -genkeypair \
+            -alias androiddebugkey \
+            -keypass android \
+            -keystore ~/.android/debug.keystore \
+            -storepass android \
+            -dname "CN=Android Debug,O=Android,C=US" \
+            -validity 9999
+
+      - name: Create export_presets.cfg
+        shell: bash
+        run: |
+          cat > export_presets.cfg <<'EOF'
+          [preset.0]
+
+          name="Android"
+          platform="Android"
+          runnable=true
+          dedicated_server_id=""
+          custom_features=""
+          export_filter="all_resources"
+          include_filter=""
+          exclude_filter=""
+          export_path="build/Roblox2_Online.apk"
+          encryption_include_filters=""
+          encryption_exclude_filters=""
+          encrypt_pck=false
+          encrypt_directory=false
+
+          [preset.0.options]
+
+          custom_template/release=""
+          custom_template/debug=""
+          gradle_build/use_gradle_build=false
+          architectures/armeabi-v7a=true
+          architectures/arm64-v8a=true
+          architectures/x86=false
+          architectures/x86_64=false
+          package/unique_name="com.example.roblox2"
+          package/name="Roblox2 Online"
+          package/signed=false
+          keystore/debug=""
+          keystore/debug_user="androiddebugkey"
+          keystore/debug_password="android"
+          EOF
+
+      - name: Godot Android Export
+        uses: firebelley/godot-export@v5.2.1
+        with:
+          godot_executable_download_url: https://github.com/godotengine/godot/releases/download/4.2.2-stable/Godot_v4.2.2-stable_linux.x86_64.zip
+          godot_export_templates_download_url: https://github.com/godotengine/godot/releases/download/4.2.2-stable/Godot_v4.2.2-stable_export_templates.tpz
+          relative_project_path: ./
+          archive_output: true
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-APK
+          path: build/
