@@ -22,14 +22,46 @@ jobs:
             unzip -o Roblox2_Online_v1_2.zip
           fi
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Generate export_presets.cfg
+        run: |
+          PROJ_DIR=$(find . -name "project.godot" -exec dirname {} \;)
+          cat <<EOF > "$PROJ_DIR/export_presets.cfg"
+          [preset.0]
+
+          name="Android"
+          platform="Android"
+          runnable=true
+          dedicated_server_id=""
+          custom_features=""
+          export_filter="all_resources"
+          include_filter=""
+          exclude_filter=""
+          export_path="../build/android/Roblox2_Online.apk"
+          encryption_include_filters=""
+          encryption_exclude_filters=""
+          encrypt_pck=false
+          encrypt_directory=false
+
+          [preset.0.options]
+
+          custom_template/release=""
+          custom_template/debug=""
+          gradle_build/use_gradle_build=false
+          architectures/armeabi-v7a=true
+          architectures/arm64-v8a=true
+          architectures/x86=false
+          architectures/x86_64=false
+          package/unique_name="com.example.roblox2"
+          package/name="Roblox2 Online"
+          package/signed=false
+          EOF
 
       - name: Export APK
         run: |
           mkdir -v -p build/android
-          cd Roblox2_Online_v1_2/godot || cd godot
-          godot --headless --export-release "Android" ../../build/android/Roblox2_Online.apk || godot --headless --export-release "Android" ../build/android/Roblox2_Online.apk
+          PROJ_DIR=$(find . -name "project.godot" -exec dirname {} \;)
+          cd "$PROJ_DIR"
+          godot --headless --export-release "Android" ../build/android/Roblox2_Online.apk
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
