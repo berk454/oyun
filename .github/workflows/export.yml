@@ -10,6 +10,8 @@ jobs:
   export:
     name: Android Export
     runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.2.2
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,15 +21,6 @@ jobs:
           if [ -f "Roblox2_Online_v1_2.zip" ]; then
             unzip -o Roblox2_Online_v1_2.zip
           fi
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
 
       - name: Generate export_presets.cfg
         run: |
@@ -43,7 +36,7 @@ jobs:
           export_filter="all_resources"
           include_filter=""
           exclude_filter=""
-          export_path="build/android/Roblox2_Online.apk"
+          export_path="../build/android/Roblox2_Online.apk"
           encryption_include_filters=""
           encryption_exclude_filters=""
           encrypt_pck=false
@@ -63,16 +56,26 @@ jobs:
           package/signed=false
           EOF
 
-      - name: Godot Android Export Action
-        uses: firebelley/godot-export@v5.2.1
-        with:
-          godot_executable_download_url: https://downloads.tuxfamily.org/godotengine/4.2.2/Godot_v4.2.2-stable_linux.x86_64.zip
-          godot_export_templates_download_url: https://downloads.tuxfamily.org/godotengine/4.2.2/Godot_v4.2.2-stable_export_templates.tpz
-          relative_project_path: ./Roblox2_Online_v1_2/godot
-          archive_output: false
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Export APK
+        run: |
+          mkdir -v -p build/android
+          PROJ_DIR=$(find . -name "project.godot" -exec dirname {} \;)
+          
+          # Godot'nun dahili Android template dosyasını hazır konuma getir
+          TEMPLATES_DIR="/root/.local/share/godot/export_templates/4.2.2.stable"
+          mkdir -p "$TEMPLATES_DIR"
+          if [ -f "/root/.local/share/godot/templates/4.2.2.stable/android_release.apk" ]; then
+            cp -r /root/.local/share/godot/templates/4.2.2.stable/* "$TEMPLATES_DIR/"
+          fi
+
+          cd "$PROJ_DIR"
+          godot --headless --export-release "Android" ../build/android/Roblox2_Online.apk
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Android-APK
-          path: /home/runner/.local/share/godot/builds/Android/
+          path: build/android/Roblox2_Online.apk
