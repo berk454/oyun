@@ -1,0 +1,32 @@
+name: "Godot Android Export"
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  export:
+    name: Android Export
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.2.2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+
+      - name: Export APK
+        run: |
+          mkdir -v -p build/android
+          cd godot
+          godot --headless --export-release "Android" ../build/android/Roblox2_Online.apk
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Android-APK
+          path: build/android/Roblox2_Online.apk
