@@ -14,18 +14,43 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Extract Zip File & Move Project
+      - name: Extract Zip File & Move All Files
         run: |
           if [ -f "Roblox2_Online_v1_2.zip" ]; then
             unzip -o Roblox2_Online_v1_2.zip
           fi
           
-          # Alt klasordeki project.godot'yu tespit edip ana dizine tasiyoruz
+          # Alt klasordeki project.godot'yu ve gizli dosyaları kok dizine tasiyoruz
           PROJ_DIR=$(find . -mindepth 2 -name "project.godot" -exec dirname {} \;)
           if [ -n "$PROJ_DIR" ]; then
-            echo "Proje alt klasorde bulundu: $PROJ_DIR, kok dizine tasiniyor..."
+            echo "Proje klasoru bulundu: $PROJ_DIR. Dosyalar ana dizine tasiyor..."
+            shopt -s dotglob
             cp -r $PROJ_DIR/* .
           fi
+
+      - name: Set up Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Keystore & Config Editor Settings
+        run: |
+          mkdir -p ~/.android
+          keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore ~/.android/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999
+          
+          mkdir -p ~/.config/godot
+          cat <<EOF > ~/.config/godot/editor_settings-4.godot
+          [godot]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/debug_keystore = "$HOME/.android/debug.keystore"
+          export/android/debug_user = "androiddebugkey"
+          export/android/debug_password = "android"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          EOF
 
       - name: Create export_presets.cfg
         run: |
@@ -58,6 +83,9 @@ jobs:
           package/unique_name="com.example.roblox2"
           package/name="Roblox2 Online"
           package/signed=false
+          keystore/debug="$HOME/.android/debug.keystore"
+          keystore/debug_user="androiddebugkey"
+          keystore/debug_password="android"
           EOF
 
       - name: Godot Android Export Action
