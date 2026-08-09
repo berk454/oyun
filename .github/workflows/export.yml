@@ -31,24 +31,26 @@ jobs:
 
       - name: Download & Extract Godot + Templates
         run: |
-          # Godot Engine Indir
           wget https://github.com/godotengine/godot/releases/download/4.2.2-stable/Godot_v4.2.2-stable_linux.x86_64.zip
           unzip Godot_v4.2.2-stable_linux.x86_64.zip
           sudo mv Godot_v4.2.2-stable_linux.x86_64 /usr/local/bin/godot
 
-          # Export Templates Indir
           mkdir -p ~/.local/share/godot/export_templates/4.2.2.stable
           wget https://github.com/godotengine/godot/releases/download/4.2.2-stable/Godot_v4.2.2-stable_export_templates.tpz
           unzip Godot_v4.2.2-stable_export_templates.tpz
           mv templates/* ~/.local/share/godot/export_templates/4.2.2.stable/
 
-      - name: Configure Godot Editor Settings
+      - name: Generate Debug Keystore & Configure Godot
         run: |
+          keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore ~/.android/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999
+          
           mkdir -p ~/.config/godot
           cat <<EOF > ~/.config/godot/editor_settings-4.godot
           [godot]
           export/android/android_sdk_path = "$ANDROID_HOME"
-          export/android/debug_keystore = ""
+          export/android/debug_keystore = "$HOME/.android/debug.keystore"
+          export/android/debug_user = "androiddebugkey"
+          export/android/debug_password = "android"
           export/android/java_sdk_path = "$JAVA_HOME"
           EOF
 
@@ -84,6 +86,9 @@ jobs:
           package/unique_name="com.example.roblox2"
           package/name="Roblox2 Online"
           package/signed=false
+          keystore/debug="$HOME/.android/debug.keystore"
+          keystore/debug_user="androiddebugkey"
+          keystore/debug_password="android"
           EOF
 
       - name: Export APK
