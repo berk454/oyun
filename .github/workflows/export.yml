@@ -14,10 +14,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Extract Zip File
+      - name: Extract Zip File & Move Project
         run: |
           if [ -f "Roblox2_Online_v1_2.zip" ]; then
             unzip -o Roblox2_Online_v1_2.zip
+          fi
+          
+          # Alt klasordeki project.godot'yu tespit edip ana dizine tasiyoruz
+          PROJ_DIR=$(find . -mindepth 2 -name "project.godot" -exec dirname {} \;)
+          if [ -n "$PROJ_DIR" ]; then
+            echo "Proje alt klasorde bulundu: $PROJ_DIR, kok dizine tasiniyor..."
+            cp -r $PROJ_DIR/* .
           fi
 
       - name: Create export_presets.cfg
