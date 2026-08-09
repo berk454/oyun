@@ -14,19 +14,25 @@ jobs:
       image: barichello/godot-ci:4.2.2
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Extract Zip File
+        run: |
+          if [ -f "Roblox2_Online_v1_2.zip" ]; then
+            unzip -o Roblox2_Online_v1_2.zip
+          fi
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v2
+        uses: android-actions/setup-android@v3
 
       - name: Export APK
         run: |
           mkdir -v -p build/android
-          cd godot
-          godot --headless --export-release "Android" ../build/android/Roblox2_Online.apk
+          cd Roblox2_Online_v1_2/godot || cd godot
+          godot --headless --export-release "Android" ../../build/android/Roblox2_Online.apk || godot --headless --export-release "Android" ../build/android/Roblox2_Online.apk
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Android-APK
           path: build/android/Roblox2_Online.apk
